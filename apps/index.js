@@ -19,85 +19,116 @@
       times = 0;
       
       let handler = function (end) {
-        let reqItem;
+        let newContent = '';
+
         rank = 1;
-
-        function getData () {
-          if (reqs.readyState !== XMLHttpRequest.DONE) return;
-
-          if (reqs.status === 200) {
-            // Deserializing (String → Object)
-            responseObj = JSON.parse(reqItem.responseText);
-            console.log(`${responseObj.id}`);
-  
-            let newContent = '';
-            let site;
-            let commText;
-
-            if (`${responseObj.url}` === 'undefined') {
-              site = '';
-            } else {
-              let a = document.createElement('a');
-              a.href = `${responseObj.url}`;
-
-              site = `<span class="sitebit"> (<a href="${base}from?site=${a.hostname}">${a.hostname}</a>)</span>`
-            }
-
-            if (`${responseObj.descendants}` === '0') {
-              commText = 'discuss';
-            } else {
-              commText = `${responseObj.descendants} comments`;
-            }
-
-            newContent += `<li>
-              <span class="count">${rank + (times * 30)}.</span>
-              <span class="title"><a href="${responseObj.url}">${responseObj.title}</a></span>
-              ${site}
-              <div class="subtext">
-                <span class="score">${responseObj.score} points</span> 
-                by <a href="${base}user?id=${responseObj.by}">${responseObj.by}</a> 
-                <span class="age"><a href="${base}item?id=${responseObj.id}">${responseObj.time} minutes ago</a></span>  | 
-                <a href="${base}hide?id=${responseObj.id}&amp;goto=news">hide</a> | 
-                <a href="${base}item?id=${responseObj.id}">${commText}</a>
-              </div>
-              </li>`;
-            
-            $content.innerHTML += newContent;
-            rank++;
-            isClicked = true;
-            
-          } else {
-            console.log(`[${reqItem.status}] : ${reqItem.statusText}`);
-          }
-
-          if (rank === 31) {
-            times++;
-          }
-
-          count++;
-
-          if (count < end) {
-            sendRequest();
-          }
-        }
-
-        function sendRequest () {
-            reqItem = new XMLHttpRequest();
-
-            // while문이 도는 횟수만큼 아래에 예약을 건 셈
-            reqItem.addEventListener('load', getData);
-
-            reqItem.open('GET', `${prefixUrl}item/${parseData[count]}.json`);
-            reqItem.send();
-        }
-
+        
         $content.innerHTML = '';
         console.log(count, end);
 
-        sendRequest();
+        let save = [];
+
+        function getData (reqItem, count) {
+          let obj = {
+            'count': count,
+            'req': reqItem
+          }
+          console.log(count);
+
+          save.push(obj);
+
+          if (save.length === 30 || save.length === parseData.length - (times * 30)) {
+            save.sort(function (a, b) {
+              if (a.count > b.count) {
+                return 1;
+              } else if (a.count < b.count) {
+                return -1;
+              } else {
+                return 0;
+              }
+            });
+
+            for (let i = 0; i < save.length; i++) {
+              callback(save[i].req);
+            }
+          }
+
+          function callback (reqItem) {
+            if (reqs.readyState !== XMLHttpRequest.DONE) return;
+          
+            if (reqs.status === 200) {
+              // Deserializing (String → Object)
+              responseObj = JSON.parse(reqItem.responseText);
+              console.log(`${responseObj.id}`);
+    
+              let site;
+              let commText;
+
+              if (`${responseObj.url}` === 'undefined') {
+                site = '';
+              } else {
+                let a = document.createElement('a');
+                a.href = `${responseObj.url}`;
+
+                site = `<span class="sitebit"> (<a href="${base}from?site=${a.hostname}">${a.hostname}</a>)</span>`
+              }
+
+              if (`${responseObj.descendants}` === '0') {
+                commText = 'discuss';
+              } else {
+                commText = `${responseObj.descendants} comments`;
+              }
+
+              newContent += `<li>
+                <span class="count">${rank + (times * 30)}.</span>
+                <span class="title"><a href="${responseObj.url}">${responseObj.title}</a></span>
+                ${site}
+                <div class="subtext">
+                  <span class="score">${responseObj.score} points</span> 
+                  by <a href="${base}user?id=${responseObj.by}">${responseObj.by}</a> 
+                  <span class="age"><a href="${base}item?id=${responseObj.id}">${responseObj.time} minutes ago</a></span>  | 
+                  <a href="${base}hide?id=${responseObj.id}&amp;goto=news">hide</a> | 
+                  <a href="${base}item?id=${responseObj.id}">${commText}</a>
+                </div>
+                </li>`;
+              
+              // $content.innerHTML += newContent;
+              rank++;
+              isClicked = true;
+              
+              
+            } else {
+              console.log(`[${reqItem.status}] : ${reqItem.statusText}`);
+            }
+
+            if (rank === (end - (times * 30) + 1)) {
+              times++;
+              $content.innerHTML += newContent;
+            }
+          }
+        }
+
+        while (count < end) {
+          function xhr (callback) {
+            let reqItem = new XMLHttpRequest();
+
+            (function (reqItem, count) {
+              reqItem.addEventListener('load', function () {
+                callback(reqItem, count);
+              });
+              reqItem.open('GET', `${prefixUrl}item/${parseData[count]}.json`);
+              reqItem.send();
+            }(reqItem, count));
+          }
+
+          xhr(getData);
+
+          count++;
+        }
 
         return end;
       }
+
       parseData = JSON.parse(reqs.responseText);
       console.log(parseData);
 
