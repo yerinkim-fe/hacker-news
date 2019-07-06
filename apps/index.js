@@ -49,11 +49,11 @@
             });
 
             for (let i = 0; i < save.length; i++) {
-              callback(save[i].req);
+              func(save[i].req);
             }
           }
 
-          function callback (reqItem) {
+          function func (reqItem) {
             if (reqs.readyState !== XMLHttpRequest.DONE) return;
           
             if (reqs.status === 200) {
@@ -112,6 +112,8 @@
           function xhr (callback) {
             let reqItem = new XMLHttpRequest();
 
+            // 함수가 실행되면 스코프가 생성되므로, 아래 함수스코프에는 reqItem과 count가 각각의 스코프에 저장된다.
+            // 그런 상태로 응답처리할 때 callback함수가 호출되면 
             (function (reqItem, count) {
               reqItem.addEventListener('load', function () {
                 callback(reqItem, count);
