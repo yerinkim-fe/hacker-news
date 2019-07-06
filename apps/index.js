@@ -113,7 +113,7 @@
             let reqItem = new XMLHttpRequest();
 
             // 함수가 실행되면 스코프가 생성되므로, 아래 함수스코프에는 reqItem과 count가 각각의 스코프에 저장된다.
-            // 그런 상태로 응답처리할 때 callback함수가 호출되면 
+            // 그런 상태로 응답처리할 때 callback함수가 호출되면 자기 스코프 내에 있는 reqItem과 count를 참조한다.
             (function (reqItem, count) {
               reqItem.addEventListener('load', function () {
                 callback(reqItem, count);
